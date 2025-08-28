@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Group Chat</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #chat-container {
+            background-color: #fff;
+            width: 400px;
+            height: 600px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            position: relative;
+        }
+
+        #online-count {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            font-size: 14px;
+            font-weight: normal;
+            color: #cce5ff;
+        }
+
+        #chat-log {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            scrollbar-width: none;
+            background-color: #e5ddd5;
+        }
+
+        #chat-log::-webkit-scrollbar {
+            display: none;
+        }
+
+        .message {
+            display: inline-block;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 75%;
+            position: relative;
+            font-size: 14px;
+            line-height: 1.4;
+            word-wrap: break-word;
+            box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
+        }
+
+        .self {
+            background-color: #dcf8c6;
+            align-self: flex-end;
+            border-bottom-right-radius: 0;
+        }
+
+        .other {
+            background-color: #fff;
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
+        }
+
+        .sender-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .timestamp {
+            font-size: 11px;
+            color: gray;
+            text-align: right;
+            margin-top: 5px;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid #ddd;
+            background-color: #fafafa;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .input-area button {
+  padding: 10px 20px;
+  background-color: #28a745; /* green */
+  color: white;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  transition: background-color 0.3s ease;
+}
+
+.input-area button:hover {
+  background-color: #1e7e34;
+}
+
+
+        #online-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        #online-circle {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background-color: red; /* default color */
+            display: inline-block;
+            border: 1px solid #ccc;
+        }
+
+        /* Sender info container */
+        .sender-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 3px;
+        }
+
+        .sender-info img {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #ccc;
+        }
+    </style>
+<body>
+    <div id="chat-container">
+        <header>
+            Room: {{ room_name }}
+            <div id="online-status" style="float: right; margin-right: 15px;">
+                <span id="online-circle"></span>
+                <span id="online-count">0</span> Online
+            </div>
+        </header>
+        <div id="chat-log"></div>
+
+        <div class="input-area">
+            <input id="chat-message-input" type="text" placeholder="Type your message...">
+            <button id="chat-message-submit">Send</button>
+        </div>
+
+    </div>
+
+    <script>
+        const senderId = "{{ sender_id }}";
+        const senderType = "{{ sender_type }}";
+        const roomName = "{{ room_name }}";
+
+        // Validate URL helper
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        // Create a message HTML element with profile pic or fallback avatar
+        function createMessageElement(data, isSelf) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', isSelf ? 'self' : 'other');
+
+            // Container for sender info (image + name)
+            const senderInfo = document.createElement('div');
+            senderInfo.classList.add('sender-info');
+
+            // Profile image or fallback avatar with initials
+            let profileImgSrc;
+            if (data.profile_image_url && isValidUrl(data.profile_image_url)) {
+                profileImgSrc = data.profile_image_url;
+            } else {
+                const initials = encodeURIComponent(data.sender_name || 'User');
+                profileImgSrc = `https://ui-avatars.com/api/?name=${initials}&background=007bff&color=fff&size=40`;
+            }
+
+            const profileImg = document.createElement('img');
+            profileImg.src = profileImgSrc;
+            profileImg.alt = data.sender_name || 'User';
+
+            // Sender name
+            const senderName = document.createElement('div');
+            senderName.classList.add('sender-name');
+            senderName.textContent = data.sender_name || 'Unknown';
+
+            senderInfo.appendChild(profileImg);
+            senderInfo.appendChild(senderName);
+
+            // Message text
+            const messageText = document.createElement('div');
+            messageText.textContent = data.message;
+
+            // Append sender info and message text
+            messageDiv.appendChild(senderInfo);
+            messageDiv.appendChild(messageText);
+
+            // Append file link if exists
+            if (data.file_url && data.filename) {
+                const fileLink = document.createElement('a');
+                fileLink.href = data.file_url;
+                fileLink.target = '_blank';
+                fileLink.textContent = `📎 ${data.filename}`;
+                fileLink.style.display = 'block';
+                fileLink.style.marginTop = '5px';
+                messageDiv.appendChild(fileLink);
+            }
+
+            // Timestamp
+            const timestamp = document.createElement('div');
+            timestamp.classList.add('timestamp');
+            const time = new Date(data.timestamp);
+            timestamp.textContent = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            messageDiv.appendChild(timestamp);
+
+            return messageDiv;
+        }
+    </script>
+
+    {{ past_messages|json_script:"past-messages" }}
+
+    <script>
+    const chatLog = document.getElementById('chat-log');
+    const messageInput = document.getElementById('chat-message-input');
+    const messageSubmit = document.getElementById('chat-message-submit');
+    const pastMessages = JSON.parse(document.getElementById("past-messages").textContent);
+    const onlineCircle = document.getElementById('online-circle');
+    const onlineCountSpan = document.getElementById('online-count');
+
+    // Render past messages on page load
+    pastMessages.forEach(data => {
+        const isSelf = data.sender_type === senderType && data.sender_id == senderId;
+        chatLog.appendChild(createMessageElement(data, isSelf));
+    });
+
+    scrollChatToBottom();
+
+    const chatSocket = new WebSocket(
+        (window.location.protocol === "https:" ? "wss" : "ws") +
+        '://' + window.location.host + '/ws/chat/' + roomName + '/'
+    );
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+
+        if (data.type === 'user_count') {
+            const count = data.online_count || 0;
+            onlineCountSpan.textContent = count;
+            onlineCircle.style.backgroundColor = (count >= 2) ? 'green' : 'red';
+        } else if (data.type === 'chat_message') {
+            const isSelf = data.sender_type === senderType && data.sender_id == senderId;
+            chatLog.appendChild(createMessageElement(data, isSelf));
+            scrollChatToBottom();
+        }
+    };
+
+    chatSocket.onclose = function() {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+    messageInput.focus();
+    messageInput.onkeyup = function(e) {
+        if (e.key === 'Enter') messageSubmit.click();
+    };
+
+    messageSubmit.onclick = function() {
+        const message = messageInput.value;
+        if (!message.trim()) return;
+
+        chatSocket.send(JSON.stringify({
+            message: message,
+            sender_id: senderId,
+            sender_type: senderType
+        }));
+        messageInput.value = '';
+    };
+
+    function scrollChatToBottom() {
+        chatLog.scrollTop = chatLog.scrollHeight;
+    }
+</script>
+
+</body>
+</html>

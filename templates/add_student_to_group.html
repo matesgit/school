@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Students to {{ group.name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f4f8;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            font-size: 22px;
+            color: #333;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        .student-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .student {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .student:hover {
+            background-color: #f5faff;
+        }
+
+        .student.selected {
+            background-color: #cfe2ff;
+        }
+
+        .student span {
+            font-weight: 500;
+        }
+
+        .add-button {
+            padding: 10px 16px;
+            font-size: 14px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .add-button:hover {
+            background-color: #0056b3;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #555;
+        }
+
+        .back-link:hover {
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Add Students to Group: {{ group.name }}</h2>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search students by name or surname...">
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="student-list" id="studentList">
+                {% for student in available_students %}
+                    <div class="student" data-name="{{ student.name }} {{ student.surname }}">
+                        <span>{{ student.name }} {{ student.surname }}</span>
+                        <input type="checkbox" name="student_ids" value="{{ student.id }}" hidden>
+                        <span class="plus-icon">➕</span>
+                    </div>
+                {% endfor %}
+            </div>
+            <button type="submit" class="add-button">Add Selected Students</button>
+        </form>
+
+        <a href="{% url 'manage_groups' %}" class="back-link">← Back to Groups</a>
+    </div>
+<!-- ########################### scrollbar mchirdeba ########################### -->
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const studentDivs = document.querySelectorAll('.student');
+
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            studentDivs.forEach(div => {
+                const name = div.dataset.name.toLowerCase();
+                div.style.display = name.includes(query) ? 'flex' : 'none';
+            });
+        });
+
+        studentDivs.forEach(div => {
+            div.addEventListener('click', function() {
+                const checkbox = this.querySelector('input[type="checkbox"]');
+                checkbox.checked = !checkbox.checked;
+                this.classList.toggle('selected');
+            });
+        });
+    </script>
+</body>
+</html>

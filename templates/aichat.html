@@ -1,0 +1,355 @@
+<!-- templates/aichat.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chat with AI Assistant</title>
+  <style>
+    /* Reset & base */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #eef2f7;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    h2 {
+      margin: 20px 0 10px;
+      color: #222;
+      text-align: center;
+    }
+
+    #chatbox {
+      width: 100%;
+      max-width: 600px;
+      height: 450px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgb(0 0 0 / 0.1);
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scroll-behavior: smooth;
+    }
+
+    .message {
+      max-width: 75%;
+      padding: 12px 16px;
+      border-radius: 20px;
+      font-size: 16px;
+      line-height: 1.4;
+      box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background-color: #3498db;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.ai {
+      align-self: flex-start;
+      background-color: #f0f0f0;
+      color: #333;
+      border-bottom-left-radius: 4px;
+    }
+
+    .message.error {
+      align-self: flex-start;
+      background-color: #ffe6e6;
+      color: #d32f2f;
+      border: 1px solid #ffcdd2;
+      border-bottom-left-radius: 4px;
+    }
+
+    .message.typing {
+      align-self: flex-start;
+      background-color: #f8f9fa;
+      color: #666;
+      border-bottom-left-radius: 4px;
+      font-style: italic;
+    }
+
+    .typing-indicator {
+      display: inline-block;
+      position: relative;
+    }
+
+    .typing-indicator::after {
+      content: '';
+      animation: typing 1.5s infinite;
+    }
+
+    @keyframes typing {
+      0%, 60% { content: ''; }
+      20% { content: '.'; }
+      40% { content: '..'; }
+      80%, 100% { content: '...'; }
+    }
+
+    #input-section {
+      width: 100%;
+      max-width: 600px;
+      margin: 15px 0 30px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    #userInput {
+      flex-grow: 1;
+      padding: 14px 18px;
+      font-size: 16px;
+      border: 2px solid #ccc;
+      border-radius: 24px;
+      outline-offset: 2px;
+      transition: border-color 0.2s ease-in-out;
+    }
+    #userInput:focus {
+      border-color: #3498db;
+      box-shadow: 0 0 5px #3498dbaa;
+    }
+
+    #sendBtn {
+      padding: 14px 30px;
+      font-size: 16px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out;
+      min-width: 80px;
+    }
+    #sendBtn:hover:not(:disabled) {
+      background-color: #2c80c9;
+    }
+    #sendBtn:disabled {
+      background-color: #a0c4f1;
+      cursor: not-allowed;
+    }
+
+    .status-indicator {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+
+    .status-indicator.connected {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status-indicator.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .status-indicator.sending {
+      background-color: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+  </style>
+</head>
+<body>
+  <div id="statusIndicator" class="status-indicator connected">Ready</div>
+  <h2>Chat with AI Assistant</h2>
+  <div id="chatbox" role="log" aria-live="polite" aria-relevant="additions"></div>
+
+  <div id="input-section">
+    <input
+      type="text"
+      id="userInput"
+      placeholder="Type your message..."
+      aria-label="Type your message"
+      autocomplete="off"
+      spellcheck="false"
+      maxlength="1000"
+    />
+    <button id="sendBtn" disabled>Send</button>
+  </div>
+
+  <script>
+    const chatbox = document.getElementById('chatbox');
+    const input = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const statusIndicator = document.getElementById('statusIndicator');
+
+    let isWaitingForResponse = false;
+    let typingMessage = null;
+
+    // Enable send button only if input has text and not waiting for response
+    input.addEventListener('input', () => {
+      sendBtn.disabled = !input.value.trim() || isWaitingForResponse;
+    });
+
+    function updateStatus(status, message) {
+      statusIndicator.className = `status-indicator ${status}`;
+      statusIndicator.textContent = message;
+      
+      // Auto-hide non-error status after 3 seconds
+      if (status !== 'error') {
+        setTimeout(() => {
+          if (statusIndicator.className.includes(status)) {
+            statusIndicator.className = 'status-indicator connected';
+            statusIndicator.textContent = 'Ready';
+          }
+        }, 3000);
+      }
+    }
+
+    function appendMessage(sender, text, type = 'normal') {
+      const msg = document.createElement('div');
+      
+      if (sender === 'You') {
+        msg.classList.add('message', 'user');
+      } else if (type === 'error') {
+        msg.classList.add('message', 'error');
+      } else if (type === 'typing') {
+        msg.classList.add('message', 'typing');
+        msg.innerHTML = `<span class="typing-indicator">AI is thinking</span>`;
+      } else {
+        msg.classList.add('message', 'ai');
+      }
+      
+      if (type !== 'typing') {
+        msg.textContent = text;
+      }
+      
+      chatbox.appendChild(msg);
+      chatbox.scrollTop = chatbox.scrollHeight;
+      
+      return msg;
+    }
+
+    function removeMessage(messageElement) {
+      if (messageElement && messageElement.parentNode) {
+        messageElement.parentNode.removeChild(messageElement);
+      }
+    }
+
+    async function sendMessage() {
+      const message = input.value.trim();
+      if (!message || isWaitingForResponse) return;
+
+      // Update UI state
+      isWaitingForResponse = true;
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Sending...';
+      
+      // Add user message
+      appendMessage('You', message);
+      
+      // Clear input
+      input.value = '';
+      
+      // Show typing indicator
+      typingMessage = appendMessage('AI', '', 'typing');
+      updateStatus('sending', 'Sending message...');
+
+      try {
+        const response = await fetch('/ai-chat/api/send/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({ message })
+        });
+
+        // Remove typing indicator
+        if (typingMessage) {
+          removeMessage(typingMessage);
+          typingMessage = null;
+        }
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.reply) {
+          appendMessage('AI', data.reply);
+          updateStatus('connected', 'Message sent successfully');
+        } else {
+          appendMessage('AI', 'No response received from AI', 'error');
+          updateStatus('error', 'Invalid response format');
+        }
+        
+      } catch (err) {
+        // Remove typing indicator on error
+        if (typingMessage) {
+          removeMessage(typingMessage);
+          typingMessage = null;
+        }
+        
+        let errorMessage = 'Error contacting AI. Please try again.';
+        
+        if (err.message.includes('Failed to fetch')) {
+          errorMessage = 'Network error. Please check your connection.';
+          updateStatus('error', 'Network error');
+        } else if (err.message.includes('timeout')) {
+          errorMessage = 'Request timeout. The AI service may be busy.';
+          updateStatus('error', 'Request timeout');
+        } else if (err.message.includes('500')) {
+          errorMessage = 'Server error. Please try again later.';
+          updateStatus('error', 'Server error');
+        } else {
+          updateStatus('error', 'Connection failed');
+        }
+        
+        appendMessage('AI', errorMessage, 'error');
+        console.error('Chat error:', err);
+      } finally {
+        // Reset UI state
+        isWaitingForResponse = false;
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send';
+        input.focus();
+      }
+    }
+
+    // Event listeners
+    sendBtn.addEventListener('click', sendMessage);
+    
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !sendBtn.disabled) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Focus input on page load
+    window.addEventListener('load', () => {
+      input.focus();
+    });
+
+    // Handle page visibility changes
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        updateStatus('connected', 'Ready');
+      }
+    });
+  </script>
+</body>
+</html>

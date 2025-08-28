@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Manage Students</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f7fb;
+            margin: 0;
+            padding: 30px 15px;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .container {
+            background: #fff;
+            width: 100%;
+            max-width: 700px;
+            border-radius: 10px;
+            padding: 30px 40px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            margin-bottom: 25px;
+            font-weight: 700;
+            font-size: 1.8rem;
+            color: #222;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        form { margin-bottom: 35px; }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 0.95rem;
+        }
+        select, input[type="text"], input[type="email"], input[type="password"], textarea {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            border: 1.8px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        select:focus, input[type="text"]:focus, input[type="email"]:focus, textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 8px rgba(59,130,246,0.3);
+        }
+        button {
+            background-color: #3b82f6;
+            color: white;
+            font-weight: 600;
+            border: none;
+            padding: 14px 0;
+            width: 100%;
+            font-size: 1.1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.25s ease;
+        }
+        button:hover { background-color: #2563eb; }
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            transition: background-color 0.2s ease;
+        }
+        li:hover { background-color: #e0f2fe; }
+        .student-info { flex: 1; font-weight: 600; color: #1e293b; }
+        .student-actions { display: flex; gap: 10px; }
+        .student-actions form { margin: 0; }
+        .student-actions button {
+            background-color: #ef4444;
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            width: auto;
+        }
+        .student-actions button:hover { background-color: #dc2626; }
+        .student-actions a {
+            padding: 8px 15px;
+            background-color: #3b82f6;
+            color: white;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.25s ease;
+        }
+        .student-actions a:hover { background-color: #2563eb; }
+        .message-list li.message {
+            background-color: #d1fae5;
+            color: #065f46;
+            font-weight: 600;
+            border-color: #a7f3d0;
+        }
+        .no-students { color: #64748b; font-style: italic; text-align: center; margin-top: 15px; }
+        .back-link {
+            display: block;
+            margin-top: 30px;
+            text-align: center;
+            font-weight: 600;
+            color: #3b82f6;
+            text-decoration: none;
+            font-size: 1rem;
+        }
+        .back-link:hover { text-decoration: underline; }
+        #studentSearch {
+            padding: 10px;
+            width: 100%;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1.5px solid #ccc;
+            font-size: 1rem;
+        }
+        @media (max-width: 480px) {
+            .container { padding: 20px 25px; }
+            button, .student-actions button, .student-actions a {
+                font-size: 0.85rem;
+                padding: 10px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>{{ name }}'s Student List</h2>
+        <a href="{% url 'lector_dashboard' %}" class="back-link">⬅ Back to Dashboard</a>
+
+        {% if messages %}
+            <ul class="message-list">
+                {% for message in messages %}
+                    <li class="message">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <form method="POST" novalidate>
+            {% csrf_token %}
+            <div>
+                <label for="{{ form.student.id_for_label }}">{{ form.student.label }}</label>
+                {{ form.student }}
+            </div>
+            <button type="submit">Add Student</button>
+        </form>
+
+        <h3>Current Students:</h3>
+        
+        <!-- 🔍 Search Bar -->
+        <input type="text" id="studentSearch" placeholder="Search student by name or email...">
+
+        {% if student_list %}
+        <ul id="studentList">
+            {% for student in student_list %}
+                <li>
+                    <div class="student-info">
+                        {{ student.name }} {{ student.surname }} — <small>{{ student.email }}</small>
+                    </div>
+                    <div class="student-actions">
+                        <form method="POST" action="{% url 'remove_student' student.id %}" onsubmit="return confirm('Are you sure you want to remove this student?');">
+                            {% csrf_token %}
+                            <button type="submit" aria-label="Remove {{ student.name }}">Remove</button>
+                        </form>
+                        <a href="{% url 'student_detail' student.id %}" aria-label="View details of {{ student.name }}">View</a>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+            <p class="no-students">No students added yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- jQuery and Select2 Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        // Enable searchable dropdown for adding student
+        $(document).ready(function() {
+            $('.student-select').select2({
+                placeholder: "Search or select a student",
+                allowClear: true
+            });
+        });
+
+        // 🔍 Search filter for current students
+        document.getElementById('studentSearch').addEventListener('keyup', function() {
+            let filter = this.value.toLowerCase();
+            let students = document.querySelectorAll('#studentList li');
+            students.forEach(function(student) {
+                let text = student.textContent.toLowerCase();
+                if (text.includes(filter)) {
+                    student.style.display = '';
+                } else {
+                    student.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

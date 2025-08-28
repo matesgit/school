@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Groups</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f6f9;
+      padding: 40px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    form input[type="text"], form select, form button, form input[type="file"] {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    form button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    form button:hover {
+      background-color: #0056b3;
+    }
+
+    .student-list {
+      margin-top: 10px;
+      padding-left: 20px;
+    }
+
+    .student-list li {
+      margin-bottom: 5px;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 20px;
+      text-decoration: none;
+      color: #555;
+      font-weight: bold;
+    }
+
+    .back-link:hover {
+      color: #000;
+    }
+
+    #student-list {
+      max-height: 135px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: #fdfdfd;
+    }
+
+    .student-item {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 2px 0;
+    }
+
+    .student-item input[type="checkbox"] {
+      transform: scale(1.2);
+    }
+
+    .student-item input[type="checkbox"]:checked + label {
+      color: #007bff;
+      font-weight: bold;
+    }
+
+    #student-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #student-list::-webkit-scrollbar-thumb {
+      background-color: #007bff88;
+      border-radius: 4px;
+    }
+
+    #student-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .group {
+      background-color: #f9f9f9;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .group-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .group-actions a {
+      margin-right: 10px;
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    .group-actions a:hover {
+      text-decoration: underline;
+    }
+
+    .student-list li a {
+      color: #d9534f;
+      text-decoration: none;
+    }
+
+    .student-list li a:hover {
+      text-decoration: underline;
+    }
+    .student-list {
+      max-height: 120px; /* approx height for 5 students */
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding-left: 15px;
+      padding-right: 5px;
+      border-radius: 6px;
+      background: #fdfdfd;
+    }
+    .student-list li {
+      height: 24px;
+      line-height: 24px;
+      overflow: hidden;
+    }
+
+  </style>
+</head>
+<body>
+  <h2>lector {{ lector.name }}!</h2>
+  <a href="{% url 'lector_dashboard' %}" class="back-link">← Back to Dashboard</a>
+  <div class="container">
+    <h2>Create New Group</h2>
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <label for="id_name">Group Name</label>
+      {{ form.name }}
+
+      <label for="student-search">Search Students</label>
+      <input type="text" id="student-search" placeholder="Type to search...">
+
+      <div id="student-list">
+        {% for student in students %}
+        <div class="student-item">
+          <input type="checkbox" name="students" value="{{ student.id }}">
+          <label>{{ student.name }} {{ student.surname }}</label>
+        </div>
+        {% endfor %}
+      </div>
+
+      <button type="submit">Create Group</button>
+    </form>
+
+    <h2>Your Groups</h2>
+    {% if groups %}
+    {% for group in groups %}
+    <div class="group">
+      <div class="group-title">
+        {{ group.name }} ({{ group.students.count }} students)
+      </div>
+      <div class="group-actions">
+        <a href="{% url 'add_student_to_group' group.id %}">➕ Add Student</a>
+        <a href="{% url 'delete_group' group.id %}">🗑 Delete Group</a>
+        <a href="{% url 'lector_group_page' group.id %}">👁 View Group</a>
+      </div>
+      {% if group.students.all %}
+      <ul class="student-list">
+        {% for student in group.students.all %}
+        <li>
+          {{ student.name }}
+          <a href="{% url 'remove_student_from_group' group.id student.id %}">❌ Remove</a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p style="margin-top: 10px; color: #777;">No students in this group.</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <p>No groups yet.</p>
+    {% endif %}
+  </div>
+
+  <script>
+    const searchInput = document.getElementById('student-search');
+    const studentItems = document.querySelectorAll('#student-list .student-item');
+
+    searchInput.addEventListener('input', function () {
+      const searchTerm = this.value.toLowerCase();
+      studentItems.forEach(item => {
+        const label = item.textContent.toLowerCase();
+        item.style.display = label.includes(searchTerm) ? 'flex' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>

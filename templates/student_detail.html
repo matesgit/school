@@ -1,0 +1,177 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Detail</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #eef2f7;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: auto;
+            background: #ffffff;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 25px;
+        }
+
+        .profile-image {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        .profile-image img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #dcdde1;
+        }
+
+        .info-section {
+            margin-bottom: 30px;
+        }
+
+        .info-section strong {
+            color: #34495e;
+        }
+
+        .section-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #2d3436;
+            border-bottom: 2px solid #dcdde1;
+            padding-bottom: 5px;
+        }
+
+        ul {
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+
+        ul li {
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            color: #2f3640;
+        }
+
+        ul li:last-child {
+            border-bottom: none;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 30px;
+            text-decoration: none;
+            background-color: #0984e3;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 6px;
+            transition: background-color 0.3s;
+        }
+
+        a:hover {
+            background-color: #74b9ff;
+        }
+        
+        /* Nested points list styling */
+        .nested-points {
+            margin-top: 8px;
+            padding-left: 20px;
+            list-style-type: disc;
+            color: #555;
+            max-height: 150px; /* Enough space for ~5 items */
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 6px;
+        }
+        .nested-points li {
+            padding: 6px 0;
+            border-bottom: none;
+        }
+        .no-points {
+            margin-left: 20px;
+            font-style: italic;
+            color: #666;
+        }
+
+        .total-points {
+            margin-left: 20px;
+            margin-top: 8px;
+            font-weight: 700;
+            color: #2d3436;
+        }
+
+        /* Custom Scrollbar */
+        .nested-points::-webkit-scrollbar {
+            width: 8px;
+        }
+        .nested-points::-webkit-scrollbar-thumb {
+            background-color: #ccc;
+            border-radius: 4px;
+        }
+        .nested-points::-webkit-scrollbar-thumb:hover {
+            background-color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Student Profile</h2>
+        <a href="{% url 'manage_students' %}">⬅ Back to Manage Students</a>
+
+        <!-- Profile Image -->
+        <div class="profile-image">
+            {% if student.profile_image and student.profile_image.url %}
+                <img src="{{ student.profile_image.url }}" alt="Profile Image">
+            {% else %}
+                <img src="{% static 'images/default-profile.png' %}" alt="Default Avatar">
+            {% endif %}
+        </div>
+
+        <!-- Student Info -->
+        <div class="info-section">
+            <p><strong>Name:</strong> {{ student.name }} {{ student.surname }}</p>
+            <p><strong>Email:</strong> {{ student.email }}</p>
+        </div>
+
+        <!-- Groups and Their Lectors & Points -->
+        <div class="info-section">
+            <div class="section-title">Groups and Points</div>
+            <ul>
+                {% for item in groups_with_lectors_and_points %}
+                    <li>
+                        <strong>{{ item.group.name }}</strong> — Lector: {{ item.lector.name }} {{ item.lector.surname }}
+                        {% if item.points %}
+                            <ul class="nested-points">
+                                {% for point in item.points %}
+                                    <li>
+                                        {{ point.subject }} - <strong>{{ point.value }}</strong> ({{ point.get_point_type_display }})
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                            <p class="total-points">Total Points: {{ item.total_points }}</p>
+                        {% else %}
+                            <p class="no-points">No points assigned yet for this group.</p>
+                        {% endif %}
+                    </li>
+                {% empty %}
+                    <li>No groups found.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

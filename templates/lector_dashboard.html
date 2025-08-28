@@ -1,0 +1,135 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lector Dashboard</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            background: #eef2f5;
+        }
+
+        .sidebar {
+            width: 200px;
+            background-color: #2c3e50;
+            color: white;
+            height: 100vh;
+            padding-top: 40px;
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .sidebar a {
+            display: block;
+            padding: 15px;
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .sidebar a:hover {
+            background-color: #34495e;
+        }
+
+        .main {
+            flex: 1;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .profile-image {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid #3498db;
+            margin-bottom: 20px;
+        }
+
+        .info {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        .upload-form {
+            margin-bottom: 30px;
+        }
+
+        .upload-form input[type="file"] {
+            margin: 10px 0;
+        }
+
+        .upload-form button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .upload-form button:hover {
+            background-color: #2980b9;
+        }
+
+        .logout-btn {
+            background-color: #dc3545;
+        }
+
+        .logout-btn:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h3>LECTOR PANEL</h3>
+      
+        <a href="{% url 'manage_students' %}">Manage Students</a>
+        <a href="{% url 'manage_groups' %}">Manage Groups</a>
+        <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+    </div>
+
+    <div class="main">
+        {% if lector.profile_image %}
+            <img class="profile-image" src="{{ lector.profile_image.url }}" alt="Profile Image">
+        {% else %}
+            <img class="profile-image" src="{% static 'images/default-profile.png' %}" alt="Default Image">
+        {% endif %}
+
+        <!-- Upload Form -->
+        <form method="POST" enctype="multipart/form-data" class="upload-form">
+            {% csrf_token %}
+            <input type="file" name="profile_image" accept="image/*" required>
+            <br>
+            <button type="submit">Upload New Profile Picture</button>
+        </form>
+
+        <a href="{% url 'chat' %}">
+    <button type="button" style="
+        padding: 10px 20px;
+        background-color: #2ecc71;
+        border: none;
+        color: white;
+        cursor: pointer;
+        border-radius: 5px;
+        margin-top: 10px;
+    ">
+        Chat with AI Assistant
+    </button>
+</a>
+
+        <div class="info"><strong>Name:</strong> {{ lector.name }}</div>
+        <div class="info"><strong>Surname:</strong> {{ lector.surname }}</div>
+        <div class="info"><strong>Email:</strong> {{ lector.email }}</div>
+        <div class="info"><strong>ID:</strong> {{ lector.lector_id }}</div>
+    </div>
+</body>
+</html>

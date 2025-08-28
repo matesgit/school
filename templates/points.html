@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>My Points - {{ group.name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef1f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px 15px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            color: #555;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .no-points {
+            text-align: center;
+            margin-top: 30px;
+            font-style: italic;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <a href="{% url 'student_group_page' group.id %}" class="back-link">View Group</a>
+        <a href="{% url 'student_dashboard' %}">Profile</a>
+        <h2>My Points in "{{ group.name }}"</h2>
+
+        <p><strong>Total Points: {{ total_points }}</strong></p>
+
+        {% if points %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Lector</th>
+                    <th>Points</th>
+                    <th>Comments</th>
+                    <th>Date Given</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for point in points %}
+                    <tr>
+                        <td>{{ point.lector.name }} {{ point.lector.surname }}</td>
+                        <td>{{ point.value }}</td>
+                        <td>{{ point.point_type }}</td>
+                        <td>{{ point.created_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="no-points">No points have been assigned to you yet.</p>
+        {% endif %}
+
+    </div>
+</body>
+</html>
